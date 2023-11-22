@@ -1,0 +1,62 @@
+version: "3.8"
+services:
+  mongo1:
+    hostname: m1
+    image: mongo:6
+    ports:
+      - 3001:27017
+    entrypoint: [ "mongod", "--bind_ip_all", "--replSet", "my-replica" ]
+    volumes:
+      - ./data/db1:/data/db
+    restart: always
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  mongo2:
+    hostname: m2
+    image: mongo:6
+    ports:
+      - 3002:27017
+    entrypoint: [ "mongod", "--bind_ip_all", "--replSet", "my-replica" ]
+    volumes:
+      - ./data/db2:/data/db
+    restart: always
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  mongo3:
+    hostname: m3
+    image: mongo:6
+    ports:
+      - 3003:27017
+    entrypoint: [ "mongod", "--bind_ip_all", "--replSet", "my-replica" ]
+    volumes:
+      - ./data/db3:/data/db
+    restart: always
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  mongo-rs-initiator:
+    # It's job is to initiate replica set of mongo1, mongo2 and mongo3. 
+    # After that, it stops.
+    image: mongo:6
+    entrypoint: [ "bash", "/opt/rs-init.sh" ]
+    volumes:
+      - ./rs-init.sh:/opt/rs-init.sh:ro
+    restart: no
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+      mongo3:
+        condition: service_healthy
